@@ -3,6 +3,8 @@
 #include "pilha.h" //DFS
 #include "fila.h" //BFS
 #include <locale>
+#include <fstream>
+#include <cstdlib>
 #define TAM 100
 using namespace std;
 
@@ -68,20 +70,13 @@ void BFS(int mat[TAM][TAM], int vert, int inicio, vector<string>& nomes) {
     vector<bool> visitado(vert, false);
     TFila<int> fila;
     inicializa_fila(fila);
-    int visitados = 0;
 
-    cout << "\nBFS partindo do vértice " << nomes[inicio]  << ": ";
-    while (visitados < vert) {
-        if (fila.inicio == NULL) { //grafo desconectado
-            for (int i = 0; i < vert; i++) {
-                if (!visitado[i]) {
-                    insere_fila(fila, i);
-                    visitado[i] = true;
-                    visitados++;
-                    break;
-                }
-            }
-        }
+    cout << "\nBFS partindo do vértice " << nomes[inicio] << ": ";
+
+    insere_fila(fila, inicio);
+    visitado[inicio] = true;
+
+    while (true) {
         while (fila.inicio != NULL) {
             int v = remove_fila(fila);
             cout << nomes[v] << " ";
@@ -90,10 +85,22 @@ void BFS(int mat[TAM][TAM], int vert, int inicio, vector<string>& nomes) {
                 if (mat[v][i] == 1 && !visitado[i]) {
                     insere_fila(fila, i);
                     visitado[i] = true;
-                    visitados++;
                 }
             }
         }
+
+        // vértices não visitados, fila vazia
+        bool achou = false;
+        for (int i = 0; i < vert; i++) {
+            if (!visitado[i]) {
+                insere_fila(fila, i);
+                visitado[i] = true;
+                achou = true;
+                break;
+            }
+        }
+
+        if (!achou) break;
     }
 
     cout << endl;
@@ -340,7 +347,7 @@ void mostrarSubgrafos(int mat[TAM][TAM], int vert, vector<string>& nomes) {
     vector<bool> visitado(vert, false);
     int contador = 0;
 
-    //transposta para o transitivo inverso
+    //Transposta para o transitivo inverso
     int mat_transposta[TAM][TAM] = {0};
     for (int i = 0; i < vert; i++) {
         for (int j = 0; j < vert; j++) {
@@ -401,6 +408,45 @@ void mostrarSubgrafos(int mat[TAM][TAM], int vert, vector<string>& nomes) {
         cout << "O grafo possui " << contador << " subgrafos fortemente conectados.\n";
 }
 
+void exportarParaDot(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dirigido) {
+    ofstream arq("grafo.dot");
+    if (dirigido) {
+    arq << "digraph G {\n";
+    } else {
+        arq << "graph G {\n";
+    }
+
+    string seta;
+    if (dirigido) {
+        seta = " -> ";
+    } else {
+        seta = " -- ";
+    }
+
+    // Adiciona todos os vértices
+    for (int i = 0; i < vert; i++) {
+        arq << "  \"" << nomes[i] << "\";\n";
+    }
+
+    // Adiciona as conexões
+    for (int i = 0; i < vert; i++) {
+        for (int j = (dirigido ? 0 : i + 1); j < vert; j++) {
+            if (mat[i][j] == 1) {
+                arq << "  \"" << nomes[i] << "\"" << seta << "\"" << nomes[j] << "\";\n";
+            }
+        }
+    }
+
+    arq << "}\n";
+    arq.close();
+
+    // Gera imagem
+    system("dot -Tpng grafo.dot -o grafo.png");
+    cout << "Arquivo 'grafo.dot' e 'grafo.png' gerados!" << endl;
+}
+
+
+
 
 void exibirMenu() {
     cout << "\nMENU:" << endl;
@@ -415,6 +461,7 @@ void exibirMenu() {
     cout << "9 - Remover" << endl;
     cout << "10 - Conectividade / Componentes" << endl;
     cout << "11 - Inserir vértice " << endl; 
+    cout << "12 - Mostrar grafo " << endl; 
     cout << "0 - Sair" << endl;
     cout << "Escolha uma opção: ";
 }
@@ -560,6 +607,10 @@ int main() {
             }
             case 11:{
                 inserirVertice(mat, nomes, vert);
+                break;
+            }
+            case 12:{
+                exportarParaDot(mat, vert, nomes, dirigido);
                 break;
             }
             case 0:
