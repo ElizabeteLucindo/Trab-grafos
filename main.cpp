@@ -5,6 +5,8 @@
 #include <locale>
 #include <fstream>
 #include <cstdlib>
+#include <set>
+#include <algorithm>
 #define TAM 100
 using namespace std;
 
@@ -407,6 +409,7 @@ void mostrarSubgrafos(int mat[TAM][TAM], int vert, vector<string>& nomes) {
     else
         cout << "O grafo possui " << contador << " subgrafos fortemente conectados.\n";
 }
+
 void plotarGrafo(int mat[TAM][TAM], int vert, vector<string>& nomes, vector<string>* cores = nullptr, bool dirigido = false, const string& arquivoSaida = "grafo.html") {
     ofstream arquivo(arquivoSaida);
     if (!arquivo.is_open()) {
@@ -415,20 +418,20 @@ void plotarGrafo(int mat[TAM][TAM], int vert, vector<string>& nomes, vector<stri
     }
 
     arquivo << R"(
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8"/>
-<title>Grafo</title>
-<script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-<style>#mynetwork { width:100%; height:600px; border:1px solid lightgray; }</style>
-</head>
-<body>
-<h2>Visualização do Grafo</h2>
-<div id="mynetwork"></div>
-<script>
-var nodes = new vis.DataSet([
-)";
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <meta charset="utf-8"/>
+    <title>Grafo</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>#mynetwork { width:100%; height:600px; border:1px solid lightgray; }</style>
+    </head>
+    <body>
+    <h2>Grafo</h2>
+    <div id="mynetwork"></div>
+    <script>
+    var nodes = new vis.DataSet([
+    )";
 
     // nós
     for (int i = 0; i < vert; i++) {
@@ -441,14 +444,14 @@ var nodes = new vis.DataSet([
 
     arquivo << R"(]);
 
-var edges = new vis.DataSet([
-)";
+    var edges = new vis.DataSet([
+    )";
 
-    // arestas (todas da mesma cor, por exemplo cinza)
+    // arestas
     for (int i = 0; i < vert; i++) {
         for (int j = 0; j < vert; j++) {
             if (mat[i][j] == 1 && ((!dirigido && i < j) || dirigido)) {
-                arquivo << "  { from:" << i << ", to:" << j << ", color:'gray'";
+                arquivo << "  { from:" << i << ", to:" << j << ", color:'black'";
                 if (dirigido) arquivo << ", arrows:'to'";
                 arquivo << " },\n";
             }
@@ -457,57 +460,99 @@ var edges = new vis.DataSet([
 
     arquivo << R"(]);
 
-var container = document.getElementById('mynetwork');
-var data = { nodes: nodes, edges: edges };
-var options = {
-    edges: { smooth:false },
-    physics: { enabled:true }
-};
-var network = new vis.Network(container, data, options);
-</script>
-</body>
-</html>
-)";
+    var container = document.getElementById('mynetwork');
+    var data = { nodes: nodes, edges: edges };
+    var options = {
+        edges: { smooth:false },
+        physics: { enabled:true }
+    };
+    var network = new vis.Network(container, data, options);
+    </script>
+    </body>
+    </html>
+    )";
 
     arquivo.close();
     cout << "\nArquivo '" << arquivoSaida << "' gerado! Abra no navegador.\n";
 }
 
-void colorirGrafo(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dirigido = false) {
-    vector<int> cor(vert, -1);
+void coloracao(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dirigido = false) {
+    vector<int> cor(vert, -1); // cor por vértice iniciada sem cor
     vector<string> coresDisponiveis = {"red", "green", "blue", "yellow", "orange", "purple", "cyan", "magenta"};
-    vector<string> coresVertice(vert);
+    vector<int> grau(vert, 0);
+    vector<int> saturacao(vert, 0);
 
-    for (int u = 0; u < vert; u++) {
-        vector<bool> usadas(vert, false);
-        for (int v = 0; v < vert; v++) {
-            if (mat[u][v] == 1 && cor[v] != -1)
-                usadas[cor[v]] = true;
+    // Calcular grau de cada vértice
+    for(int i=0;i<vert;i++){
+        for(int j=0;j<vert;j++){
+            if(mat[i][j]==1) 
+                grau[i]++;
         }
-        for (int c = 0; c < vert; c++) {
-            if (!usadas[c]) {
-                cor[u] = c;
+    }
+
+    // Colorir primeiro vértice de maior grau
+    int u = max_element(grau.begin(), grau.end()) - grau.begin();
+    cor[u] = 0;
+    int coloridos = 1;
+
+    while(coloridos < vert){
+        int max_saturacao = -1;
+        int max_grau = -1;
+        int proximo = -1; // vértice escolhido para colorir
+
+        // Grau de saturação
+        for(int i=0;i<vert;i++){
+            if(cor[i]==-1){
+                set<int> coresVizinhos;
+                for(int j=0;j<vert;j++){
+                    if(mat[i][j]==1 && cor[j]!=-1)
+                        coresVizinhos.insert(cor[j]);
+                }
+                saturacao[i] = coresVizinhos.size();
+
+                // Maior saturação, em caso de empate, escolhe maior grau
+                if(saturacao[i] > max_saturacao || (saturacao[i]==max_saturacao && grau[i]>max_grau)){
+                    max_saturacao = saturacao[i];
+                    max_grau = grau[i];
+                    proximo = i;
+                }
+            }
+        }
+
+        // Escolher a menor cor disponível
+        vector<bool> usadas(coresDisponiveis.size(), false);
+        for(int j=0;j<vert;j++){
+            if(mat[proximo][j]==1 && cor[j]!=-1)
+                usadas[cor[j]] = true;
+        }
+        for(int c = 0; c < (int)coresDisponiveis.size(); c++){
+            if(!usadas[c]){
+                cor[proximo] = c;
                 break;
             }
         }
-        if(cor[u] == -1) cor[u] = 0; // cor padrão
-        coresVertice[u] = coresDisponiveis[cor[u] % coresDisponiveis.size()];
+
+        coloridos++;
     }
 
+    // Mostrar resultado
+    vector<string> coresVertice(vert);
     cout << "\nColoração do Grafo:\n";
-    for (int i = 0; i < vert; i++)
+    for(int i=0;i<vert;i++){
+        coresVertice[i] = coresDisponiveis[cor[i] % coresDisponiveis.size()];
         cout << nomes[i] << " -> " << coresVertice[i] << endl;
+    }
 
-    // chama função de plotagem passando cores
     plotarGrafo(mat, vert, nomes, &coresVertice, dirigido, "grafo_colorido.html");
 }
 
-// Função para colorir arestas usando heurística greedy
+
+// Função para colorir arestas /////////////////////////////////////
 void colorirArestas(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dirigido = false, const string& arquivoSaida = "grafo_arestas_coloridas.html") {
     vector<string> coresDisponiveis = {"red", "green", "blue", "orange", "purple", "cyan", "magenta", "yellow"};
     
     // Para armazenar a cor de cada aresta (i,j) com mat[i][j]==1
-    string corArestas[TAM][TAM] = {""};
+    string corArestas[TAM][TAM];
 
     for (int i = 0; i < vert; i++) {
         for (int j = 0; j < vert; j++) {
@@ -768,7 +813,7 @@ int main() {
                 break;
             }
             case 12:{
-                colorirGrafo(mat, vert, nomes, dirigido);
+                coloracao(mat, vert, nomes, dirigido);
                 break;
             }
             case 0:
