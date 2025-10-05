@@ -407,42 +407,200 @@ void mostrarSubgrafos(int mat[TAM][TAM], int vert, vector<string>& nomes) {
     else
         cout << "O grafo possui " << contador << " subgrafos fortemente conectados.\n";
 }
-
-void exportarParaDot(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dirigido) {
-    ofstream arq("grafo.dot");
-    if (dirigido) {
-    arq << "digraph G {\n";
-    } else {
-        arq << "graph G {\n";
+void plotarGrafo(int mat[TAM][TAM], int vert, vector<string>& nomes, vector<string>* cores = nullptr, bool dirigido = false, const string& arquivoSaida = "grafo.html") {
+    ofstream arquivo(arquivoSaida);
+    if (!arquivo.is_open()) {
+        cout << "Erro ao criar o arquivo HTML!" << endl;
+        return;
     }
 
-    string seta;
-    if (dirigido) {
-        seta = " -> ";
-    } else {
-        seta = " -- ";
-    }
+    arquivo << R"(
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Grafo</title>
+<script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<style>#mynetwork { width:100%; height:600px; border:1px solid lightgray; }</style>
+</head>
+<body>
+<h2>Visualização do Grafo</h2>
+<div id="mynetwork"></div>
+<script>
+var nodes = new vis.DataSet([
+)";
 
-    // Adiciona todos os vértices
+    // nós
     for (int i = 0; i < vert; i++) {
-        arq << "  \"" << nomes[i] << "\";\n";
+        arquivo << "  { id:" << i << ", label:'" << nomes[i] << "'";
+        if (cores) arquivo << ", color:'" << (*cores)[i] << "'";
+        arquivo << " }";
+        if (i < vert-1) arquivo << ",";
+        arquivo << "\n";
     }
 
-    // Adiciona as conexões
+    arquivo << R"(]);
+
+var edges = new vis.DataSet([
+)";
+
+    // arestas (todas da mesma cor, por exemplo cinza)
     for (int i = 0; i < vert; i++) {
-        for (int j = (dirigido ? 0 : i + 1); j < vert; j++) {
-            if (mat[i][j] == 1) {
-                arq << "  \"" << nomes[i] << "\"" << seta << "\"" << nomes[j] << "\";\n";
+        for (int j = 0; j < vert; j++) {
+            if (mat[i][j] == 1 && ((!dirigido && i < j) || dirigido)) {
+                arquivo << "  { from:" << i << ", to:" << j << ", color:'gray'";
+                if (dirigido) arquivo << ", arrows:'to'";
+                arquivo << " },\n";
             }
         }
     }
 
-    arq << "}\n";
-    arq.close();
+    arquivo << R"(]);
 
-    // Gera imagem
-    system("dot -Tpng grafo.dot -o grafo.png");
-    cout << "Arquivo 'grafo.dot' e 'grafo.png' gerados!" << endl;
+var container = document.getElementById('mynetwork');
+var data = { nodes: nodes, edges: edges };
+var options = {
+    edges: { smooth:false },
+    physics: { enabled:true }
+};
+var network = new vis.Network(container, data, options);
+</script>
+</body>
+</html>
+)";
+
+    arquivo.close();
+    cout << "\nArquivo '" << arquivoSaida << "' gerado! Abra no navegador.\n";
+}
+
+void colorirGrafo(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dirigido = false) {
+    vector<int> cor(vert, -1);
+    vector<string> coresDisponiveis = {"red", "green", "blue", "yellow", "orange", "purple", "cyan", "magenta"};
+    vector<string> coresVertice(vert);
+
+    for (int u = 0; u < vert; u++) {
+        vector<bool> usadas(vert, false);
+        for (int v = 0; v < vert; v++) {
+            if (mat[u][v] == 1 && cor[v] != -1)
+                usadas[cor[v]] = true;
+        }
+        for (int c = 0; c < vert; c++) {
+            if (!usadas[c]) {
+                cor[u] = c;
+                break;
+            }
+        }
+        if(cor[u] == -1) cor[u] = 0; // cor padrão
+        coresVertice[u] = coresDisponiveis[cor[u] % coresDisponiveis.size()];
+    }
+
+    cout << "\nColoração do Grafo:\n";
+    for (int i = 0; i < vert; i++)
+        cout << nomes[i] << " -> " << coresVertice[i] << endl;
+
+    // chama função de plotagem passando cores
+    plotarGrafo(mat, vert, nomes, &coresVertice, dirigido, "grafo_colorido.html");
+}
+
+// Função para colorir arestas usando heurística greedy
+void colorirArestas(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dirigido = false, const string& arquivoSaida = "grafo_arestas_coloridas.html") {
+    vector<string> coresDisponiveis = {"red", "green", "blue", "orange", "purple", "cyan", "magenta", "yellow"};
+    
+    // Para armazenar a cor de cada aresta (i,j) com mat[i][j]==1
+    string corArestas[TAM][TAM] = {""};
+
+    for (int i = 0; i < vert; i++) {
+        for (int j = 0; j < vert; j++) {
+            if (mat[i][j] == 1) {
+                // Descobre cores já usadas nas arestas adjacentes
+                vector<bool> usadas(coresDisponiveis.size(), false);
+                for (int k = 0; k < vert; k++) {
+                    if (mat[i][k] == 1 && corArestas[i][k] != "") {
+                        for (size_t c = 0; c < coresDisponiveis.size(); c++)
+                            if (corArestas[i][k] == coresDisponiveis[c])
+                                usadas[c] = true;
+                    }
+                    if (mat[k][j] == 1 && corArestas[k][j] != "") {
+                        for (size_t c = 0; c < coresDisponiveis.size(); c++)
+                            if (corArestas[k][j] == coresDisponiveis[c])
+                                usadas[c] = true;
+                    }
+                }
+
+                // Escolhe a primeira cor disponível
+                for (size_t c = 0; c < coresDisponiveis.size(); c++) {
+                    if (!usadas[c]) {
+                        corArestas[i][j] = coresDisponiveis[c];
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    // Agora gerar HTML com cores das arestas
+    ofstream arquivo(arquivoSaida);
+    if (!arquivo.is_open()) {
+        cout << "Erro ao criar o arquivo HTML!" << endl;
+        return;
+    }
+
+    arquivo << R"(
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Grafo com Arestas Coloridas</title>
+<script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<style>#mynetwork { width:100%; height:600px; border:1px solid lightgray; }</style>
+</head>
+<body>
+<h2>Visualização do Grafo (Arestas Coloridas)</h2>
+<div id="mynetwork"></div>
+<script>
+var nodes = new vis.DataSet([
+)";
+
+    // Nós (sem alteração de cor)
+    for (int i = 0; i < vert; i++) {
+        arquivo << "  { id:" << i << ", label:'" << nomes[i] << "' }";
+        if (i < vert-1) arquivo << ",";
+        arquivo << "\n";
+    }
+
+    arquivo << R"(]);
+
+var edges = new vis.DataSet([
+)";
+
+    // Arestas coloridas
+    for (int i = 0; i < vert; i++) {
+        for (int j = 0; j < vert; j++) {
+            if (mat[i][j] == 1 && ((!dirigido && i < j) || dirigido)) {
+                arquivo << "  { from:" << i << ", to:" << j
+                        << ", color:'" << corArestas[i][j] << "'";
+                if (dirigido) arquivo << ", arrows:'to'";
+                arquivo << " },\n";
+            }
+        }
+    }
+
+    arquivo << R"(]);
+
+var container = document.getElementById('mynetwork');
+var data = { nodes: nodes, edges: edges };
+var options = {
+    edges: { smooth:false },
+    physics: { enabled:true }
+};
+var network = new vis.Network(container, data, options);
+</script>
+</body>
+</html>
+)";
+
+    arquivo.close();
+    cout << "\nArquivo '" << arquivoSaida << "' gerado! Abra no navegador.\n";
 }
 
 
@@ -610,7 +768,7 @@ int main() {
                 break;
             }
             case 12:{
-                exportarParaDot(mat, vert, nomes, dirigido);
+                colorirGrafo(mat, vert, nomes, dirigido);
                 break;
             }
             case 0:
