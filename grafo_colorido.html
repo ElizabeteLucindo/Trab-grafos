@@ -14,9 +14,9 @@
     var nodes = new vis.DataSet([
       { id:0, label:'a', color:'red' },
   { id:1, label:'b', color:'green' },
-  { id:2, label:'c', color:'green' },
-  { id:3, label:'d', color:'blue' },
-  { id:4, label:'e', color:'blue' }
+  { id:2, label:'c', color:'blue' },
+  { id:3, label:'d', color:'yellow' },
+  { id:4, label:'e', color:'yellow' }
 ]);
 
     var edges = new vis.DataSet([
@@ -24,6 +24,7 @@
   { from:0, to:2, color:'black' },
   { from:0, to:3, color:'black' },
   { from:0, to:4, color:'black' },
+  { from:1, to:2, color:'black' },
   { from:1, to:3, color:'black' },
   { from:1, to:4, color:'black' },
   { from:2, to:3, color:'black' },

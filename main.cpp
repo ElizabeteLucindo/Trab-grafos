@@ -496,7 +496,7 @@ void coloracao(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dirigido
     vector<int> grau(vert, 0);
     vector<int> saturacao(vert, 0);
 
-    // Calcular grau de cada vértice
+    // Calcula grau de cada vértice
     for(int i=0;i<vert;i++){
         for(int j=0;j<vert;j++){
             if(mat[i][j]==1) 
@@ -533,7 +533,7 @@ void coloracao(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dirigido
             }
         }
 
-        // Escolher a menor cor disponível
+        // Escolhe a menor cor disponível
         vector<bool> usadas(coresDisponiveis.size(), false);
         for (int j = 0; j < vert; j++) {
             if ((mat[proximo][j] == 1 || mat[j][proximo] == 1) && cor[j] != -1) {
@@ -563,7 +563,7 @@ void coloracao(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dirigido
 }
 
 
-// Função para colorir arestas
+// Colorir arestas
 void colorirArestas(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dirigido = false, const string& arquivoSaida = "grafo_arestas_coloridas.html") {
     vector<string> coresDisponiveis = {"red", "green", "blue", "orange", "purple", "cyan", "magenta", "yellow"};
     
@@ -572,10 +572,10 @@ void colorirArestas(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dir
    
     for (int i = 0; i < vert; i++) {
         for (int j = 0; j < vert; j++) {
-            if (mat[i][j] == 1 && (dirigido || i < j)) { //percorrer metade da matriz
+            if (mat[i][j] == 1 && (dirigido || i < j)) { //percorre metade da matriz
                 vector<bool> usadas(coresDisponiveis.size(), false);
 
-                // Verificar cores das arestas incidentes em i
+                // Verifica cores das arestas 
                 for (int k = 0; k < vert; k++) {
                     if (mat[i][k] == 1 && corArestas[i][k] != "") {
                         for (int c = 0; c < (int)coresDisponiveis.size(); c++)
@@ -583,7 +583,7 @@ void colorirArestas(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dir
                                 usadas[c] = true;
                     }
                 }
-                // Verificar cores das arestas incidentes em j
+            
                 for (int k = 0; k < vert; k++) {
                     if (mat[j][k] == 1 && corArestas[j][k] != "") {
                         for (int c = 0; c < (int)coresDisponiveis.size(); c++)
@@ -592,7 +592,7 @@ void colorirArestas(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dir
                     }
                 }
 
-                // Escolher a primeira cor disponível
+                // Escolhe a primeira cor disponível
                 for (int c = 0; c < (int)coresDisponiveis.size(); c++) {
                     if (!usadas[c]) {
                         corArestas[i][j] = coresDisponiveis[c];
@@ -604,7 +604,7 @@ void colorirArestas(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dir
         }
     }
 
-    // Gerar HTML
+    // Gera HTML
     ofstream arquivo(arquivoSaida);
     if (!arquivo.is_open()) {
         cout << "Erro ao criar o arquivo HTML!" << endl;
