@@ -547,35 +547,40 @@ void coloracao(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dirigido
 }
 
 
-// Função para colorir arestas /////////////////////////////////////
+// Função para colorir arestas
 void colorirArestas(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dirigido = false, const string& arquivoSaida = "grafo_arestas_coloridas.html") {
     vector<string> coresDisponiveis = {"red", "green", "blue", "orange", "purple", "cyan", "magenta", "yellow"};
     
-    // Para armazenar a cor de cada aresta (i,j) com mat[i][j]==1
     string corArestas[TAM][TAM];
 
+   
     for (int i = 0; i < vert; i++) {
         for (int j = 0; j < vert; j++) {
-            if (mat[i][j] == 1) {
-                // Descobre cores já usadas nas arestas adjacentes
+            if (mat[i][j] == 1 && (dirigido || i < j)) { //percorrer metade da matriz
                 vector<bool> usadas(coresDisponiveis.size(), false);
+
+                // Verificar cores das arestas incidentes em i
                 for (int k = 0; k < vert; k++) {
                     if (mat[i][k] == 1 && corArestas[i][k] != "") {
-                        for (size_t c = 0; c < coresDisponiveis.size(); c++)
+                        for (int c = 0; c < (int)coresDisponiveis.size(); c++)
                             if (corArestas[i][k] == coresDisponiveis[c])
                                 usadas[c] = true;
                     }
-                    if (mat[k][j] == 1 && corArestas[k][j] != "") {
-                        for (size_t c = 0; c < coresDisponiveis.size(); c++)
-                            if (corArestas[k][j] == coresDisponiveis[c])
+                }
+                // Verificar cores das arestas incidentes em j
+                for (int k = 0; k < vert; k++) {
+                    if (mat[j][k] == 1 && corArestas[j][k] != "") {
+                        for (int c = 0; c < (int)coresDisponiveis.size(); c++)
+                            if (corArestas[j][k] == coresDisponiveis[c])
                                 usadas[c] = true;
                     }
                 }
 
-                // Escolhe a primeira cor disponível
-                for (size_t c = 0; c < coresDisponiveis.size(); c++) {
+                // Escolher a primeira cor disponível
+                for (int c = 0; c < (int)coresDisponiveis.size(); c++) {
                     if (!usadas[c]) {
                         corArestas[i][j] = coresDisponiveis[c];
+                        if (!dirigido) corArestas[j][i] = coresDisponiveis[c]; // simetria
                         break;
                     }
                 }
@@ -583,7 +588,7 @@ void colorirArestas(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dir
         }
     }
 
-    // Agora gerar HTML com cores das arestas
+    // Gerar HTML
     ofstream arquivo(arquivoSaida);
     if (!arquivo.is_open()) {
         cout << "Erro ao criar o arquivo HTML!" << endl;
@@ -591,22 +596,22 @@ void colorirArestas(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dir
     }
 
     arquivo << R"(
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8"/>
-<title>Grafo com Arestas Coloridas</title>
-<script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-<style>#mynetwork { width:100%; height:600px; border:1px solid lightgray; }</style>
-</head>
-<body>
-<h2>Visualização do Grafo (Arestas Coloridas)</h2>
-<div id="mynetwork"></div>
-<script>
-var nodes = new vis.DataSet([
-)";
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <meta charset="utf-8"/>
+    <title>Grafo com Arestas Coloridas</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>#mynetwork { width:100%; height:600px; border:1px solid lightgray; }</style>
+    </head>
+    <body>
+    <h2>Grafo (Arestas Coloridas)</h2>
+    <div id="mynetwork"></div>
+    <script>
+    var nodes = new vis.DataSet([
+    )";
 
-    // Nós (sem alteração de cor)
+    // Nós
     for (int i = 0; i < vert; i++) {
         arquivo << "  { id:" << i << ", label:'" << nomes[i] << "' }";
         if (i < vert-1) arquivo << ",";
@@ -615,40 +620,43 @@ var nodes = new vis.DataSet([
 
     arquivo << R"(]);
 
-var edges = new vis.DataSet([
-)";
+    var edges = new vis.DataSet([
+    )";
 
     // Arestas coloridas
+    bool primeiraAresta = true;
     for (int i = 0; i < vert; i++) {
         for (int j = 0; j < vert; j++) {
-            if (mat[i][j] == 1 && ((!dirigido && i < j) || dirigido)) {
+            if (mat[i][j] == 1 && (dirigido || i < j)) {
+                if (!primeiraAresta) arquivo << ",\n";
                 arquivo << "  { from:" << i << ", to:" << j
                         << ", color:'" << corArestas[i][j] << "'";
                 if (dirigido) arquivo << ", arrows:'to'";
-                arquivo << " },\n";
+                arquivo << " }";
+                primeiraAresta = false;
             }
         }
     }
 
-    arquivo << R"(]);
+    arquivo << R"(
 
-var container = document.getElementById('mynetwork');
-var data = { nodes: nodes, edges: edges };
-var options = {
-    edges: { smooth:false },
-    physics: { enabled:true }
-};
-var network = new vis.Network(container, data, options);
-</script>
-</body>
-</html>
-)";
+    ]);
+
+    var container = document.getElementById('mynetwork');
+    var data = { nodes: nodes, edges: edges };
+    var options = {
+        edges: { smooth:false },
+        physics: { enabled:true }
+    };
+    var network = new vis.Network(container, data, options);
+    </script>
+    </body>
+    </html>
+    )";
 
     arquivo.close();
     cout << "\nArquivo '" << arquivoSaida << "' gerado! Abra no navegador.\n";
 }
-
-
 
 
 void exibirMenu() {
@@ -664,7 +672,8 @@ void exibirMenu() {
     cout << "9 - Remover" << endl;
     cout << "10 - Conectividade / Componentes" << endl;
     cout << "11 - Inserir vértice " << endl; 
-    cout << "12 - Mostrar grafo " << endl; 
+    cout << "12 - Mostrar grafo (vértice colorido) " << endl; 
+    cout << "13 - Mostrar grafo (aresta colorido) " << endl; 
     cout << "0 - Sair" << endl;
     cout << "Escolha uma opção: ";
 }
@@ -814,6 +823,10 @@ int main() {
             }
             case 12:{
                 coloracao(mat, vert, nomes, dirigido);
+                break;
+            }
+            case 13:{
+                colorirArestas(mat, vert, nomes, dirigido);
                 break;
             }
             case 0:
