@@ -13,17 +13,15 @@
     <script>
     var nodes = new vis.DataSet([
       { id:0, label:'a', color:'red' },
-  { id:1, label:'b', color:'blue' },
-  { id:2, label:'c', color:'blue' },
+  { id:1, label:'b', color:'green' },
+  { id:2, label:'c', color:'red' },
   { id:3, label:'d', color:'green' }
 ]);
 
     var edges = new vis.DataSet([
       { from:0, to:1, color:'black' },
-  { from:0, to:2, color:'black' },
   { from:0, to:3, color:'black' },
-  { from:1, to:3, color:'black' },
-  { from:2, to:3, color:'black' },
+  { from:1, to:2, color:'black' },
 ]);
 
     var container = document.getElementById('mynetwork');

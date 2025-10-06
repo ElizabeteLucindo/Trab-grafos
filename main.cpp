@@ -7,8 +7,19 @@
 #include <cstdlib>
 #include <set>
 #include <algorithm>
+#include <string>
 #define TAM 100
 using namespace std;
+
+void abrirHTML(const string& arquivo) {
+#ifdef _WIN32
+    string cmd = "start \"\" \"" + arquivo + "\"";
+    system(cmd.c_str());
+#else
+    string cmd = "xdg-open \"" + arquivo + "\"";
+    system(cmd.c_str());
+#endif
+}
 
 //adiciona arco/aresta
 void adicionar(int mat[TAM][TAM], int i, int j, bool dirigido = false) {
@@ -410,6 +421,8 @@ void mostrarSubgrafos(int mat[TAM][TAM], int vert, vector<string>& nomes) {
         cout << "O grafo possui " << contador << " subgrafos fortemente conectados.\n";
 }
 
+
+
 void plotarGrafo(int mat[TAM][TAM], int vert, vector<string>& nomes, vector<string>* cores = nullptr, bool dirigido = false, const string& arquivoSaida = "grafo.html") {
     ofstream arquivo(arquivoSaida);
     if (!arquivo.is_open()) {
@@ -474,6 +487,7 @@ void plotarGrafo(int mat[TAM][TAM], int vert, vector<string>& nomes, vector<stri
 
     arquivo.close();
     cout << "\nArquivo '" << arquivoSaida << "' gerado! Abra no navegador.\n";
+    abrirHTML(arquivoSaida);
 }
 
 void coloracao(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dirigido = false) {
@@ -544,6 +558,7 @@ void coloracao(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dirigido
     }
 
     plotarGrafo(mat, vert, nomes, &coresVertice, dirigido, "grafo_colorido.html");
+    
 }
 
 
@@ -656,6 +671,7 @@ void colorirArestas(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dir
 
     arquivo.close();
     cout << "\nArquivo '" << arquivoSaida << "' gerado! Abra no navegador.\n";
+    abrirHTML(arquivoSaida);
 }
 
 
