@@ -12,16 +12,18 @@
     <div id="mynetwork"></div>
     <script>
     var nodes = new vis.DataSet([
-      { id:0, label:'a', color:'red' },
-  { id:1, label:'b', color:'green' },
-  { id:2, label:'c', color:'red' },
-  { id:3, label:'d', color:'green' }
+      { id:0, label:'a', color:'green' },
+  { id:1, label:'b', color:'red' },
+  { id:2, label:'c', color:'blue' },
+  { id:3, label:'d', color:'green' },
+  { id:4, label:'e', color:'red' }
 ]);
 
     var edges = new vis.DataSet([
       { from:0, to:1, color:'black' },
-  { from:0, to:3, color:'black' },
+  { from:0, to:2, color:'black' },
   { from:1, to:2, color:'black' },
+  { from:1, to:3, color:'black' },
 ]);
 
     var container = document.getElementById('mynetwork');

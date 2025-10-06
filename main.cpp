@@ -536,7 +536,7 @@ void coloracao(int mat[TAM][TAM], int vert, vector<string>& nomes, bool dirigido
         // Escolher a menor cor disponível
         vector<bool> usadas(coresDisponiveis.size(), false);
         for(int j=0;j<vert;j++){
-            if(mat[proximo][j]==1 && cor[j]!=-1)
+            if((mat[proximo][j]==1 || mat[j][proximo]==1) && cor[j]!=-1)
                 usadas[cor[j]] = true;
         }
         for(int c = 0; c < (int)coresDisponiveis.size(); c++){
